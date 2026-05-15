@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+
 <title>fluxchat</title>
 
 <meta name="description" content="Nebula is a realtime chat and calling app with messaging, voice calls, video calls and friends system.">
@@ -39,7 +42,11 @@
     * {
       box-sizing: border-box;
     }
-
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js");
+}
+</script>
     body {
       margin: 0;
       min-height: 100vh;
