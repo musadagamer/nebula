@@ -1,6 +1,17 @@
 {
-  "src": "icon.png",
-  "sizes": "512x512",
-  "type": "image/png",
-  "purpose": "any"
+  "name": "Nebula Chat",
+  "short_name": "Nebula",
+  "start_url": "/nebula/",
+  "id": "/nebula/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
