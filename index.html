@@ -3,6 +3,37 @@
 <head>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7c3aed">
+  <!DOCTYPE html>
+<html>
+<head>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <!-- your page content -->
+
+  <button id="install-btn" style="display:none">Install Nebula</button>
+
+  <script>
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('install-btn').style.display = 'block';
+    });
+
+    document.getElementById('install-btn').addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('install-btn').style.display = 'none';
+    });
+  </script>
+
+</body>
+</html>
 
 <title>fluxchat</title>
 
