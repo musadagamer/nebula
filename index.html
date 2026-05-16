@@ -827,7 +827,7 @@ if ("serviceWorker" in navigator) {
         </div>
         <form id="authForm">
           <label id="nameLabel" hidden>
-            Display name
+            Username
             <input id="nameInput" autocomplete="name" maxlength="32" placeholder="Nova" />
           </label>
           <label>
@@ -881,13 +881,13 @@ if ("serviceWorker" in navigator) {
           <div class="chat-person">
             <span class="avatar" id="chatAvatar">fluxchat</span>
             <div class="user-main">
-              <div class="chat-title" id="chatTitle">Pick someone</div>
+              <div class="chat-title" id="chatTitle">Pick a friend or make one</div>
               <div class="status" id="chatStatus">Choose an account to start messaging.</div>
             </div>
           </div>
           <div class="chat-actions">
-            <button class="ghost" id="voiceCallButton" type="button" disabled>Voice</button>
-            <button class="ghost" id="videoCallButton" type="button" disabled>Video</button>
+            <button class="ghost" id="voiceCallButton" type="button" disabled>Voice call</button>
+            <button class="ghost" id="videoCallButton" type="button" disabled>Video call</button>
             <button class="ghost" id="unfriendButton" type="button" disabled>Unfriend</button>
             <button class="ghost block-action" id="blockButton" type="button" disabled>Block</button>
           </div>
@@ -923,9 +923,9 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="call-controls">
-        <button class="ghost" id="muteButton" type="button">Mute</button>
+        <button class="ghost" id="muteButton" type="button">mute</button>
         <button class="ghost" id="cameraButton" type="button">Camera</button>
-        <button class="danger-button" id="hangupButton" type="button">Hang up</button>
+        <button class="danger-button" id="hangupButton" type="button">disconnect</button>
       </div>
     </div>
   </section>
