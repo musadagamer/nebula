@@ -3,351 +3,816 @@
 <head>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7c3aed">
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Nebula</title>
+  <!DOCTYPE html>
+<html>
+<head>
+  <link rel="manifest" href="/manifest.json">
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+</head>
+<body>
+  <button class="delete-btn" onclick="deleteMessage('MESSAGE_ID_HERE')">🗑️</button>
+
+  <!-- your page content -->
+
+  <button id="install-btn" style="display:none">Install Nebula</button>
+
+  <script>
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('install-btn').style.display = 'block';
+    });
+
+    document.getElementById('install-btn').addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('install-btn').style.display = 'none';
+    });
+  </script>
+  
+
+</body>
+</html>
+
+<title>fluxchat</title>
+
 <meta name="description" content="Nebula is a realtime chat and calling app with messaging, voice calls, video calls and friends system.">
+
 <meta name="keywords" content="Nebula, chat app, messaging app, realtime chat, Nebula app">
+
 <meta name="author" content="Musa">
+
 <meta property="og:title" content="Nebula Chat App">
 <meta property="og:description" content="Realtime messaging and calling app.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://musadagamer.github.io/nebula/">
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<meta property="og:url" content="https://YOURDOMAIN.com">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fluxchat</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111318;
+      --panel: #181c24;
+      --panel-2: #202634;
+      --line: #30394a;
+      --text: #f4f6fb;
+      --muted: #aab3c5;
+      --accent: #31c6a7;
+      --accent-2: #ffb84d;
+      --danger: #ff6b6b;
+      --bubble: #2b3343;
+      --mine: #1b7f6e;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js");
 }
 </script>
-<style>
-  :root {
-    color-scheme: dark;
-    --bg: #111318;
-    --panel: #181c24;
-    --panel-2: #202634;
-    --line: #30394a;
-    --text: #f4f6fb;
-    --muted: #aab3c5;
-    --accent: #31c6a7;
-    --accent-2: #ffb84d;
-    --danger: #ff6b6b;
-    --bubble: #2b3343;
-    --mine: #1b7f6e;
-    --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at top left, rgba(49, 198, 167, 0.18), transparent 32rem),
-      linear-gradient(135deg, #111318 0%, #171923 55%, #111318 100%);
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  button, input { font: inherit; }
-  button { border: 0; cursor: pointer; }
-
-  .screen { min-height: 100vh; display: none; }
-  .screen.active { display: flex; }
-
-  .auth-screen { align-items: center; justify-content: center; padding: 28px; }
-
-  .auth-wrap {
-    width: min(1060px, 100%);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 420px;
-    gap: 28px;
-    align-items: stretch;
-  }
-
-  .brand-panel, .auth-card, .setup-panel {
-    background: rgba(24, 28, 36, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(18px);
-  }
-
-  .brand-panel {
-    min-height: 570px;
-    padding: 38px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
-  }
-
-  .brand-name { display: flex; align-items: center; gap: 12px; font-size: 1.05rem; font-weight: 800; }
-
-  .mark {
-    width: 42px; height: 42px; border-radius: 12px;
-    display: grid; place-items: center;
-    background: linear-gradient(135deg, var(--accent), #4ea3ff);
-    color: #08110f; font-weight: 900;
-  }
-
-  .brand-copy h1 {
-    margin: 0 0 18px;
-    max-width: 620px;
-    font-size: clamp(2.5rem, 6vw, 5.8rem);
-    line-height: 0.92;
-  }
-
-  .brand-copy p { margin: 0; color: var(--muted); max-width: 540px; font-size: 1.06rem; line-height: 1.7; }
-
-  .preview-chat { margin-top: 48px; width: min(520px, 100%); display: grid; gap: 12px; }
-
-  .preview-bubble {
-    max-width: 82%; padding: 14px 16px; border-radius: 8px;
-    background: var(--panel-2); color: var(--text); line-height: 1.4;
-  }
-
-  .preview-bubble.alt {
-    justify-self: end;
-    background: rgba(49, 198, 167, 0.22);
-    border: 1px solid rgba(49, 198, 167, 0.35);
-  }
-
-  .auth-card, .setup-panel { border-radius: 8px; padding: 26px; }
-  .auth-card h2, .setup-panel h2 { margin: 0 0 8px; font-size: 1.7rem; }
-  .hint { margin: 0 0 22px; color: var(--muted); line-height: 1.5; }
-
-  .tabs {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-    margin-bottom: 18px; padding: 5px; background: #11151d; border-radius: 8px;
-  }
-
-  .tab { color: var(--muted); background: transparent; border-radius: 6px; padding: 11px 14px; font-weight: 700; }
-  .tab.active { color: var(--text); background: var(--panel-2); }
-
-  form { display: grid; gap: 13px; }
-
-  label { display: grid; gap: 7px; color: var(--muted); font-size: 0.9rem; font-weight: 700; }
-
-  input {
-    width: 100%; min-height: 46px; border: 1px solid var(--line);
-    border-radius: 8px; background: #11151d; color: var(--text); outline: 0; padding: 0 13px;
-  }
-
-  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(49, 198, 167, 0.14); }
-
-  .primary { min-height: 48px; border-radius: 8px; background: var(--accent); color: #07100e; font-weight: 900; }
-
-  .ghost, .icon-button {
-    background: var(--panel-2); color: var(--text);
-    border: 1px solid var(--line); border-radius: 8px; font-weight: 800;
-  }
-
-  .ghost { min-height: 42px; padding: 0 14px; }
-  .icon-button { width: 44px; height: 44px; display: grid; place-items: center; font-size: 1.05rem; }
-
-  .error { min-height: 22px; margin: 2px 0 0; color: var(--danger); font-weight: 700; line-height: 1.4; }
-
-  .setup-panel { grid-column: 1 / -1; display: none; }
-  .setup-panel.active { display: block; }
-
-  code { color: #d7f8ef; background: #0d1117; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
-
-  .app-screen { flex-direction: column; min-height: 100vh; }
-
-  .topbar {
-    height: 70px; display: flex; align-items: center; justify-content: space-between;
-    gap: 18px; padding: 0 22px; border-bottom: 1px solid var(--line);
-    background: rgba(17, 19, 24, 0.86); backdrop-filter: blur(16px);
-  }
-
-  .profile-chip { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--muted); font-size: 0.9rem; }
-
-  .avatar {
-    width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px;
-    display: grid; place-items: center; background: var(--accent-2);
-    color: #201405; font-weight: 900; text-transform: uppercase;
-  }
-
-  .layout { min-height: 0; flex: 1; display: grid; grid-template-columns: 330px minmax(0, 1fr); }
-
-  .sidebar {
-    min-height: 0; border-right: 1px solid var(--line);
-    background: rgba(24, 28, 36, 0.88); display: flex; flex-direction: column;
-  }
-
-  .sidebar-head { padding: 18px; display: grid; gap: 12px; border-bottom: 1px solid var(--line); }
-  .sidebar-head h2 { margin: 0; font-size: 1rem; }
-
-  .side-tabs {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px; padding: 4px; background: #11151d; border-radius: 8px;
-  }
-
-  .side-tab { min-height: 36px; color: var(--muted); background: transparent; border-radius: 6px; font-size: 0.84rem; font-weight: 800; }
-  .side-tab.active { color: var(--text); background: var(--panel-2); }
-
-  .users { min-height: 0; overflow: auto; padding: 8px; }
-
-  .user-row {
-    width: 100%; display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    align-items: center; gap: 10px; padding: 10px;
-    color: var(--text); background: transparent; border-radius: 8px; text-align: left;
-  }
-
-  .user-row.with-actions { grid-template-columns: 42px minmax(0, 1fr); }
-  .user-row:hover, .user-row.active { background: var(--panel-2); }
-
-  .user-main { min-width: 0; }
-
-  .user-name, .chat-title {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 900;
-  }
-
-  .user-mail { margin-top: 3px; color: var(--muted); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #697386; }
-  .dot.online { background: var(--accent); box-shadow: 0 0 0 4px rgba(49, 198, 167, 0.12); }
-
-  .row-actions {
-    grid-column: 1 / -1; display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 8px; margin-top: 2px;
-  }
-
-  .small-button { min-height: 34px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 900; }
-  .small-button.primary-action { background: var(--accent); color: #07100e; border-color: transparent; }
-  .small-button.danger-action { color: #fff3f3; border-color: rgba(255, 107, 107, 0.5); background: rgba(255, 107, 107, 0.14); }
-  .small-button.block-action, .ghost.block-action { color: #fff3f3; border-color: rgba(255, 107, 107, 0.5); background: rgba(255, 107, 107, 0.14); }
-
-  .chat {
-    min-width: 0; min-height: 0; display: grid;
-    grid-template-rows: 72px minmax(0, 1fr) auto;
-    background: rgba(17, 19, 24, 0.82);
-  }
-
-  .chat-head {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line);
-  }
-
-  .chat-person { min-width: 0; display: flex; align-items: center; gap: 12px; }
-  .chat-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-  .status { color: var(--muted); font-size: 0.85rem; }
-
-  .app-notice {
-    display: none; padding: 10px 18px;
-    border-bottom: 1px solid rgba(255, 184, 77, 0.35);
-    background: rgba(255, 184, 77, 0.12); color: #ffe7bd; font-weight: 800; line-height: 1.4;
-  }
-  .app-notice.active { display: block; }
-
-  .messages { min-height: 0; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-
-  .empty { margin: auto; max-width: 420px; text-align: center; color: var(--muted); line-height: 1.6; }
-
-  .message { max-width: min(680px, 78%); display: grid; gap: 5px; align-self: flex-start; }
-  .message.mine { align-self: flex-end; }
-
-  .message-meta { color: var(--muted); font-size: 0.76rem; padding: 0 4px; }
-
-  .bubble { padding: 12px 14px; border-radius: 8px; background: var(--bubble); line-height: 1.45; overflow-wrap: anywhere; }
-  .mine .bubble { background: var(--mine); color: #f7fffd; }
-
-  .delete-btn {
-    background: none; border: none; color: var(--muted);
-    font-size: 0.72rem; cursor: pointer; padding: 0 4px;
-    text-align: right; opacity: 0.6; transition: opacity 0.15s;
-  }
-  .delete-btn:hover { opacity: 1; color: var(--danger); }
-
-  .composer {
-    display: grid; grid-template-columns: minmax(0, 1fr) 52px;
-    gap: 10px; padding: 14px; border-top: 1px solid var(--line);
-    background: rgba(24, 28, 36, 0.92);
-  }
-
-  .send { border-radius: 8px; background: var(--accent); color: #07100e; font-size: 1.25rem; font-weight: 900; }
-
-  .mobile-users { display: none; }
-
-  .call-layer {
-    position: fixed; inset: 0; z-index: 40; display: none;
-    align-items: center; justify-content: center; padding: 24px;
-    background: rgba(5, 7, 10, 0.78); backdrop-filter: blur(16px);
-  }
-  .call-layer.active { display: flex; }
-
-  .call-card {
-    width: min(980px, 100%); max-height: min(760px, calc(100vh - 48px));
-    display: grid; grid-template-rows: auto minmax(220px, 1fr) auto;
-    gap: 14px; padding: 18px; background: var(--panel);
-    border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow);
-  }
-
-  .call-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .call-title { margin: 0; font-size: 1.05rem; }
-
-  .video-grid { min-height: 220px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-
-  .video-tile {
-    min-height: 220px; position: relative; overflow: hidden;
-    border-radius: 8px; background: #0a0d12; border: 1px solid var(--line);
-  }
-
-  .video-tile video { width: 100%; height: 100%; min-height: 220px; display: block; object-fit: cover; background: #0a0d12; }
-
-  .video-label {
-    position: absolute; left: 10px; bottom: 10px; padding: 5px 8px;
-    border-radius: 6px; background: rgba(0, 0, 0, 0.55); color: var(--text); font-size: 0.82rem; font-weight: 800;
-  }
-
-  .call-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
-
-  .danger-button { min-height: 44px; padding: 0 18px; border-radius: 8px; background: var(--danger); color: #240707; font-weight: 900; }
-
-  .incoming-call {
-    position: fixed; right: 18px; bottom: 18px; z-index: 50;
-    width: min(360px, calc(100vw - 36px)); display: none; gap: 12px; padding: 16px;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow);
-  }
-  .incoming-call.active { display: grid; }
-  .incoming-call strong { display: block; margin-bottom: 4px; }
-
-  /* Install button */
-  #install-btn {
-    background: var(--accent); color: #07100e; border: none;
-    padding: 8px 16px; border-radius: 8px; font-weight: 900; cursor: pointer;
-  }
-
-  @media (max-width: 820px) {
-    .auth-wrap { grid-template-columns: 1fr; }
-    .brand-panel { min-height: 360px; }
-    .layout { grid-template-columns: 1fr; }
-    .sidebar {
-      position: fixed; inset: 70px 0 0 0; z-index: 10;
-      transform: translateX(-100%); transition: transform 180ms ease;
-      width: min(360px, 88vw);
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(49, 198, 167, 0.18), transparent 32rem),
+        linear-gradient(135deg, #111318 0%, #171923 55%, #111318 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    body.users-open .sidebar { transform: translateX(0); }
-    .mobile-users { display: grid; }
-    .message { max-width: 90%; }
-    .chat-head { align-items: flex-start; flex-direction: column; height: auto; padding: 12px 14px; }
-    .video-grid { grid-template-columns: 1fr; }
-  }
-</style>
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .screen {
+      min-height: 100vh;
+      display: none;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .auth-screen {
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .auth-wrap {
+      width: min(1060px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .brand-panel,
+    .auth-card,
+    .setup-panel {
+      background: rgba(24, 28, 36, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand-panel {
+      min-height: 570px;
+      padding: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .brand-name {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), #4ea3ff);
+      color: #08110f;
+      font-weight: 900;
+    }
+
+    .brand-copy h1 {
+      margin: 0 0 18px;
+      max-width: 620px;
+      font-size: clamp(2.5rem, 6vw, 5.8rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .brand-copy p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 540px;
+      font-size: 1.06rem;
+      line-height: 1.7;
+    }
+
+    .preview-chat {
+      margin-top: 48px;
+      width: min(520px, 100%);
+      display: grid;
+      gap: 12px;
+    }
+
+    .preview-bubble {
+      max-width: 82%;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .preview-bubble.alt {
+      justify-self: end;
+      background: rgba(49, 198, 167, 0.22);
+      border: 1px solid rgba(49, 198, 167, 0.35);
+    }
+
+    .auth-card,
+    .setup-panel {
+      border-radius: 8px;
+      padding: 26px;
+    }
+
+    .auth-card h2,
+    .setup-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.7rem;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 5px;
+      background: #11151d;
+      border-radius: 8px;
+    }
+
+    .tab {
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      padding: 11px 14px;
+      font-weight: 700;
+    }
+
+    .tab.active {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    form {
+      display: grid;
+      gap: 13px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #11151d;
+      color: var(--text);
+      outline: 0;
+      padding: 0 13px;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(49, 198, 167, 0.14);
+    }
+
+    .primary {
+      min-height: 48px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #07100e;
+      font-weight: 900;
+    }
+
+    .ghost,
+    .icon-button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .ghost {
+      min-height: 42px;
+      padding: 0 14px;
+    }
+
+    .icon-button {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      font-size: 1.05rem;
+    }
+
+    .error {
+      min-height: 22px;
+      margin: 2px 0 0;
+      color: var(--danger);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .setup-panel {
+      grid-column: 1 / -1;
+      display: none;
+    }
+
+    .setup-panel.active {
+      display: block;
+    }
+
+    code {
+      color: #d7f8ef;
+      background: #0d1117;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .app-screen {
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(17, 19, 24, 0.86);
+      backdrop-filter: blur(16px);
+    }
+
+    .profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-2);
+      color: #201405;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      min-height: 0;
+      border-right: 1px solid var(--line);
+      background: rgba(24, 28, 36, 0.88);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-head {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sidebar-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .side-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      padding: 4px;
+      background: #11151d;
+      border-radius: 8px;
+    }
+
+    .side-tab {
+      min-height: 36px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .side-tab.active {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    .users {
+      min-height: 0;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .user-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      color: var(--text);
+      background: transparent;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .user-row.with-actions {
+      grid-template-columns: 42px minmax(0, 1fr);
+    }
+
+    .user-row:hover,
+    .user-row.active {
+      background: var(--panel-2);
+    }
+
+    .user-main {
+      min-width: 0;
+    }
+
+    .user-name,
+    .chat-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 900;
+    }
+
+    .user-mail {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #697386;
+    }
+
+    .dot.online {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(49, 198, 167, 0.12);
+    }
+
+    .row-actions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .small-button {
+      min-height: 34px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .small-button.primary-action {
+      background: var(--accent);
+      color: #07100e;
+      border-color: transparent;
+    }
+
+    .small-button.danger-action {
+      color: #fff3f3;
+      border-color: rgba(255, 107, 107, 0.5);
+      background: rgba(255, 107, 107, 0.14);
+    }
+
+    .small-button.block-action,
+    .ghost.block-action {
+      color: #fff3f3;
+      border-color: rgba(255, 107, 107, 0.5);
+      background: rgba(255, 107, 107, 0.14);
+    }
+
+    .chat {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 72px minmax(0, 1fr) auto;
+      background: rgba(17, 19, 24, 0.82);
+    }
+
+    .chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chat-person {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .app-notice {
+      display: none;
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(255, 184, 77, 0.35);
+      background: rgba(255, 184, 77, 0.12);
+      color: #ffe7bd;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .app-notice.active {
+      display: block;
+    }
+
+    .messages {
+      min-height: 0;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty {
+      margin: auto;
+      max-width: 420px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .message {
+      max-width: min(680px, 78%);
+      display: grid;
+      gap: 5px;
+      align-self: flex-start;
+    }
+
+    .message.mine {
+      align-self: flex-end;
+    }
+
+    .message-meta {
+      color: var(--muted);
+      font-size: 0.76rem;
+      padding: 0 4px;
+    }
+
+    .bubble {
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: var(--bubble);
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .mine .bubble {
+      background: var(--mine);
+      color: #f7fffd;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 52px;
+      gap: 10px;
+      padding: 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(24, 28, 36, 0.92);
+    }
+
+    .send {
+      border-radius: 8px;
+      background: var(--accent);
+      color: #07100e;
+      font-size: 1.25rem;
+      font-weight: 900;
+    }
+
+    .mobile-users {
+      display: none;
+    }
+
+    .call-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(5, 7, 10, 0.78);
+      backdrop-filter: blur(16px);
+    }
+
+    .call-layer.active {
+      display: flex;
+    }
+
+    .call-card {
+      width: min(980px, 100%);
+      max-height: min(760px, calc(100vh - 48px));
+      display: grid;
+      grid-template-rows: auto minmax(220px, 1fr) auto;
+      gap: 14px;
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .call-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .call-title {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .video-grid {
+      min-height: 220px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .video-tile {
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #0a0d12;
+      border: 1px solid var(--line);
+    }
+
+    .video-tile video {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      display: block;
+      object-fit: cover;
+      background: #0a0d12;
+    }
+
+    .video-label {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.55);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .call-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .danger-button {
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 8px;
+      background: var(--danger);
+      color: #240707;
+      font-weight: 900;
+    }
+
+    .incoming-call {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      width: min(360px, calc(100vw - 36px));
+      display: none;
+      gap: 12px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .incoming-call.active {
+      display: grid;
+    }
+
+    .incoming-call strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 820px) {
+      .auth-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-panel {
+        min-height: 360px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        inset: 70px 0 0 0;
+        z-index: 10;
+        transform: translateX(-100%);
+        transition: transform 180ms ease;
+        width: min(360px, 88vw);
+      }
+
+      body.users-open .sidebar {
+        transform: translateX(0);
+      }
+
+      .mobile-users {
+        display: grid;
+      }
+
+      .message {
+        max-width: 90%;
+      }
+
+      .chat-head {
+        align-items: flex-start;
+        flex-direction: column;
+        height: auto;
+        padding: 12px 14px;
+      }
+
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <main id="authScreen" class="screen auth-screen active">
     <section class="auth-wrap">
       <div class="brand-panel">
-        <div class="brand-name"><span class="mark">N</span> Nebula</div>
+        <div class="brand-name"><span class="mark">A</span> Auralink</div>
         <div class="brand-copy">
           <h1>Messages that follow you.</h1>
-          <p>Sign in on any device and Nebula loads your account, people, and conversations from Firebase in real time.</p>
+          <p>Sign in on any device and fluxchat loads your account, people, and conversations from Firebase in real time.</p>
           <div class="preview-chat" aria-hidden="true">
             <div class="preview-bubble">You there?</div>
-            <div class="preview-bubble alt">Always online</div>
+            <div class="preview-bubble alt">Always to aura farm</div>
             <div class="preview-bubble">Good. That is exactly the point.</div>
           </div>
         </div>
@@ -355,8 +820,8 @@ if ("serviceWorker" in navigator) {
 
       <div class="auth-card">
         <h2 id="authTitle">Welcome back</h2>
-        <p class="hint" id="authHint">Log in to open your Nebula messages.</p>
-        <div class="tabs" role="tablist">
+        <p class="hint" id="authHint">Log in to open your fluxchat messages.</p>
+        <div class="tabs" role="tablist" aria-label="Authentication mode">
           <button class="tab active" id="loginTab" type="button">Log in</button>
           <button class="tab" id="signupTab" type="button">Sign up</button>
         </div>
@@ -380,7 +845,7 @@ if ("serviceWorker" in navigator) {
 
       <div id="setupPanel" class="setup-panel">
         <h2>Firebase setup needed</h2>
-        <p class="hint">Paste your Firebase config into <code>firebaseConfig</code>. Enable Email/Password Auth and create a Realtime Database.</p>
+        <p class="hint">You do not need a domain. In Firebase, open Project settings, add a Web app, and copy the Firebase config into <code>firebaseConfig</code>. You also need Email/Password Auth enabled and a Realtime Database created. A database URL alone is not enough for secure login.</p>
       </div>
     </section>
   </main>
@@ -389,10 +854,9 @@ if ("serviceWorker" in navigator) {
     <header class="topbar">
       <div class="brand-name"><span class="mark">N</span> Nebula</div>
       <div class="profile-chip">
-        <button class="icon-button mobile-users" id="openUsers" type="button">&#9776;</button>
+        <button class="icon-button mobile-users" id="openUsers" type="button" title="People">&#9776;</button>
         <span class="avatar" id="meAvatar">?</span>
         <span id="meName">Loading</span>
-        <button id="install-btn" style="display:none" type="button">Install Nebula</button>
         <button class="ghost" id="signOutButton" type="button">Sign out</button>
       </div>
     </header>
@@ -402,7 +866,7 @@ if ("serviceWorker" in navigator) {
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">
           <h2 id="sidebarTitle">Friends</h2>
-          <div class="side-tabs">
+          <div class="side-tabs" aria-label="People views">
             <button class="side-tab active" id="friendsTab" type="button">Friends</button>
             <button class="side-tab" id="requestsTab" type="button">Requests</button>
             <button class="side-tab" id="addTab" type="button">Add</button>
@@ -415,10 +879,10 @@ if ("serviceWorker" in navigator) {
       <section class="chat">
         <div class="chat-head">
           <div class="chat-person">
-            <span class="avatar" id="chatAvatar">N</span>
+            <span class="avatar" id="chatAvatar">fluxchat</span>
             <div class="user-main">
               <div class="chat-title" id="chatTitle">Pick someone</div>
-              <div class="status" id="chatStatus">Choose a friend to start messaging.</div>
+              <div class="status" id="chatStatus">Choose an account to start messaging.</div>
             </div>
           </div>
           <div class="chat-actions">
@@ -443,7 +907,7 @@ if ("serviceWorker" in navigator) {
     <div class="call-card">
       <div class="call-top">
         <div>
-          <p class="call-title" id="callTitle">Nebula call</p>
+          <p class="call-title" id="callTitle">fluxchat call</p>
           <div class="status" id="callStatus">Connecting</div>
         </div>
         <button class="ghost" id="closeCallButton" type="button">Close</button>
@@ -496,7 +960,7 @@ if ("serviceWorker" in navigator) {
       ]
     };
 
-    const configured = Object.values(firebaseConfig).every((v) => v && !String(v).includes("PASTE_"));
+    const configured = Object.values(firebaseConfig).every((value) => value && !String(value).includes("PASTE_"));
     const setupPanel = document.getElementById("setupPanel");
     const authScreen = document.getElementById("authScreen");
     const appScreen = document.getElementById("appScreen");
@@ -548,48 +1012,41 @@ if ("serviceWorker" in navigator) {
     const incomingStatus = document.getElementById("incomingStatus");
     const acceptCallButton = document.getElementById("acceptCallButton");
     const rejectCallButton = document.getElementById("rejectCallButton");
-    const installBtn = document.getElementById("install-btn");
 
     let mode = "login";
     let listMode = "friends";
-    let auth, db;
+    let auth;
+    let db;
     let currentUser = null;
-    let accounts = {}, friends = {}, blocked = {};
-    let incomingRequests = {}, outgoingRequests = {}, requestPairs = {};
+    let accounts = {};
+    let friends = {};
+    let blocked = {};
+    let incomingRequests = {};
+    let outgoingRequests = {};
+    let requestPairs = {};
     let selectedUser = null;
     let activeMessagesRef = null;
-    let realtimeListeners = [], messageSoundListeners = [], activeCallListeners = [];
+    let realtimeListeners = [];
+    let messageSoundListeners = [];
     let presenceListener = null;
+    let activeCallListeners = [];
     let incomingCallData = null;
     let currentCall = null;
     let peerConnection = null;
-    let localStream = null, remoteStream = null;
-    let isMuted = false, isCameraOff = false;
+    let localStream = null;
+    let remoteStream = null;
+    let isMuted = false;
+    let isCameraOff = false;
     let audioContext = null;
-    let incomingRingtoneTimer = null, outgoingRingbackTimer = null;
+    let incomingRingtoneTimer = null;
+    let outgoingRingbackTimer = null;
     let messageSoundStartTime = Date.now();
     let notifiedMessageIds = new Set();
-    let deferredPrompt = null;
-
-    // PWA Install
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = "block";
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-    });
 
     if (!configured) {
       setupPanel.classList.add("active");
       authError.textContent = "Paste your Firebase config before logging in.";
-      authForm.querySelectorAll("input, button").forEach((el) => el.disabled = true);
+      authForm.querySelectorAll("input, button").forEach((item) => item.disabled = true);
     } else {
       firebase.initializeApp(firebaseConfig);
       auth = firebase.auth();
@@ -619,23 +1076,25 @@ if ("serviceWorker" in navigator) {
     document.addEventListener("keydown", unlockAudio);
     document.addEventListener("touchstart", unlockAudio, { passive: true });
 
-    authForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
       unlockAudio();
       if (!configured) return;
       authError.textContent = "";
       authButton.disabled = true;
+
       const email = emailInput.value.trim();
       const password = passwordInput.value;
       const displayName = nameInput.value.trim() || email.split("@")[0];
+
       try {
         if (mode === "signup") {
           const credential = await auth.createUserWithEmailAndPassword(email, password);
           await credential.user.updateProfile({ displayName });
           try {
             await saveAccount(credential.user, displayName, true);
-          } catch (dbError) {
-            authError.textContent = `Account created, but Firebase Database blocked saving your profile. ${cleanFirebaseError(dbError)}`;
+          } catch (databaseError) {
+            authError.textContent = `Account created, but Firebase Database blocked Nebula from saving your profile. Paste the updated firebase-rtdb-rules.json rules. ${cleanFirebaseError(databaseError)}`;
             return;
           }
         } else {
@@ -649,10 +1108,11 @@ if ("serviceWorker" in navigator) {
       }
     });
 
-    messageForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    messageForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
       const text = messageInput.value.trim();
       if (!text || !currentUser || !selectedUser || !isFriend(selectedUser.uid) || isBlocked(selectedUser.uid)) return;
+
       const conversationId = getConversationId(currentUser.uid, selectedUser.uid);
       const message = {
         text,
@@ -660,40 +1120,35 @@ if ("serviceWorker" in navigator) {
         senderName: currentUser.displayName || currentUser.email,
         createdAt: firebase.database.ServerValue.TIMESTAMP
       };
+
       messageInput.value = "";
       await db.ref(`conversations/${conversationId}`).update({
-        members: { [currentUser.uid]: true, [selectedUser.uid]: true },
+        members: {
+          [currentUser.uid]: true,
+          [selectedUser.uid]: true
+        },
         lastMessage: text,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       });
       await db.ref(`messages/${conversationId}`).push(message);
     });
 
-    // ─── DELETE MESSAGE ───────────────────────────────────────────────────────
-    async function deleteMessage(messageId) {
-      if (!currentUser || !selectedUser) return;
-      const conversationId = getConversationId(currentUser.uid, selectedUser.uid);
-      try {
-        await db.ref(`messages/${conversationId}/${messageId}`).remove();
-        const el = document.getElementById(`msg-${messageId}`);
-        if (el) el.remove();
-      } catch (error) {
-        showNotice("Could not delete message.");
-      }
-    }
-    // ─────────────────────────────────────────────────────────────────────────
-
     function bootFirebase() {
       auth.onAuthStateChanged(async (user) => {
         currentUser = user;
-        if (!user) { showAuth(); return; }
+        if (!user) {
+          showAuth();
+          return;
+        }
+
         try {
           await saveAccount(user, user.displayName || user.email.split("@")[0], false);
         } catch (error) {
-          authError.textContent = `Firebase Database is blocking Nebula. ${cleanFirebaseError(error)}`;
+          authError.textContent = `Firebase Database is blocking Nebula. Paste the updated firebase-rtdb-rules.json rules. ${cleanFirebaseError(error)}`;
           await auth.signOut();
           return;
         }
+
         attachPresence(user.uid);
         showApp(user);
         startRealtimeListeners();
@@ -747,8 +1202,14 @@ if ("serviceWorker" in navigator) {
       if (presenceListener) connectedRef.off("value", presenceListener);
       presenceListener = (snapshot) => {
         if (snapshot.val() === true) {
-          statusRef.onDisconnect().set({ state: "offline", updatedAt: firebase.database.ServerValue.TIMESTAMP });
-          statusRef.set({ state: "online", updatedAt: firebase.database.ServerValue.TIMESTAMP });
+          statusRef.onDisconnect().set({
+            state: "offline",
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+          statusRef.set({
+            state: "online",
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
         }
       };
       connectedRef.on("value", presenceListener);
@@ -766,13 +1227,17 @@ if ("serviceWorker" in navigator) {
       });
       addRealtimeListener(db.ref(`friends/${currentUser.uid}`), "value", (snapshot) => {
         friends = snapshot.val() || {};
-        if (selectedUser && !isFriend(selectedUser.uid)) clearSelectedUser();
+        if (selectedUser && !isFriend(selectedUser.uid)) {
+          clearSelectedUser();
+        }
         syncMessageSoundListeners();
         renderUsers();
       });
       addRealtimeListener(db.ref(`blocked/${currentUser.uid}`), "value", (snapshot) => {
         blocked = snapshot.val() || {};
-        if (selectedUser && isBlocked(selectedUser.uid)) clearSelectedUser();
+        if (selectedUser && isBlocked(selectedUser.uid)) {
+          clearSelectedUser();
+        }
         renderUsers();
       });
       addRealtimeListener(db.ref(`friendRequests/${currentUser.uid}/incoming`), "value", (snapshot) => {
@@ -814,6 +1279,7 @@ if ("serviceWorker" in navigator) {
           const message = snapshot.val();
           if (!message || message.senderId === currentUser.uid) return;
           if ((message.createdAt || 0) < messageSoundStartTime - 2000) return;
+
           const soundId = `${conversationId}:${snapshot.key}`;
           if (notifiedMessageIds.has(soundId)) return;
           notifiedMessageIds.add(soundId);
@@ -832,13 +1298,17 @@ if ("serviceWorker" in navigator) {
     function renderUsers() {
       if (!currentUser) return;
       usersList.innerHTML = "";
-      if (listMode === "friends") renderFriendList();
-      else if (listMode === "requests") renderRequestList();
-      else renderDiscoverList();
+      if (listMode === "friends") {
+        renderFriendList();
+      } else if (listMode === "requests") {
+        renderRequestList();
+      } else {
+        renderDiscoverList();
+      }
     }
 
     function renderFriendList() {
-      const people = filterAccounts(Object.keys(friends).map((uid) => accounts[uid]).filter(Boolean).filter((a) => !isBlocked(a.uid)));
+      const people = filterAccounts(Object.keys(friends).map((uid) => accounts[uid]).filter(Boolean).filter((account) => !isBlocked(account.uid)));
       if (!people.length) {
         usersList.innerHTML = '<p class="empty">No friends yet. Open Add and send a friend request.</p>';
         return;
@@ -857,17 +1327,18 @@ if ("serviceWorker" in navigator) {
     }
 
     function renderRequestList() {
-      const incoming = getIncomingRequests().map((r) => accounts[r.fromUid] || requestAccount(r, "from")).filter(Boolean).filter((a) => !isBlocked(a.uid));
-      const outgoing = getOutgoingRequests().map((r) => accounts[r.toUid] || requestAccount(r, "to")).filter(Boolean).filter((a) => !isBlocked(a.uid));
+      const incoming = getIncomingRequests().map((request) => accounts[request.fromUid] || requestAccount(request, "from")).filter(Boolean).filter((account) => !isBlocked(account.uid));
+      const outgoing = getOutgoingRequests().map((request) => accounts[request.toUid] || requestAccount(request, "to")).filter(Boolean).filter((account) => !isBlocked(account.uid));
       const blockedPeople = filterAccounts(Object.keys(blocked).map((uid) => accounts[uid]).filter(Boolean));
-      const qIn = filterAccounts(incoming);
-      const qOut = filterAccounts(outgoing);
+      const queryIncoming = filterAccounts(incoming);
+      const queryOutgoing = filterAccounts(outgoing);
 
-      if (!qIn.length && !qOut.length && !blockedPeople.length) {
+      if (!queryIncoming.length && !queryOutgoing.length && !blockedPeople.length) {
         usersList.innerHTML = '<p class="empty">No friend requests yet.</p>';
         return;
       }
-      qIn.forEach((account) => {
+
+      queryIncoming.forEach((account) => {
         usersList.appendChild(createAccountRow(account, {
           label: "Incoming request",
           actions: [
@@ -877,7 +1348,8 @@ if ("serviceWorker" in navigator) {
           ]
         }));
       });
-      qOut.forEach((account) => {
+
+      queryOutgoing.forEach((account) => {
         usersList.appendChild(createAccountRow(account, {
           label: "Request sent",
           actions: [
@@ -887,10 +1359,13 @@ if ("serviceWorker" in navigator) {
           ]
         }));
       });
+
       blockedPeople.forEach((account) => {
         usersList.appendChild(createAccountRow(account, {
           label: "Blocked",
-          actions: [{ text: "Unblock", loadingText: "Unblocking", className: "primary-action", onClick: () => unblockUser(account.uid) }]
+          actions: [
+            { text: "Unblock", loadingText: "Unblocking", className: "primary-action", onClick: () => unblockUser(account.uid) }
+          ]
         }));
       });
     }
@@ -898,14 +1373,16 @@ if ("serviceWorker" in navigator) {
     function renderDiscoverList() {
       const query = searchUsers.value.trim();
       if (query.length < 2) {
-        usersList.innerHTML = '<p class="empty">Type at least 2 characters to find someone.</p>';
+        usersList.innerHTML = '<p class="empty">Search by name or email to find an account. Type at least 2 characters.</p>';
         return;
       }
-      const people = filterAccounts(Object.values(accounts).filter((a) => a.uid !== currentUser.uid && !isFriend(a.uid) && !isBlocked(a.uid)));
+
+      const people = filterAccounts(Object.values(accounts).filter((account) => account.uid !== currentUser.uid && !isFriend(account.uid) && !isBlocked(account.uid)));
       if (!people.length) {
         usersList.innerHTML = '<p class="empty">No matching accounts found.</p>';
         return;
       }
+
       const incoming = requestsByUid(getIncomingRequests(), "fromUid");
       const outgoing = requestsByUid(getOutgoingRequests(), "toUid");
       people.forEach((account) => {
@@ -918,15 +1395,16 @@ if ("serviceWorker" in navigator) {
               { text: "Block", loadingText: "Blocking", className: "block-action", onClick: () => blockUser(account.uid) }
             ]
           : hasOutgoing
-          ? [
-              { text: "Pending", disabled: true },
-              { text: "Cancel", loadingText: "Canceling", className: "danger-action", onClick: () => cancelFriendRequest(account.uid) },
-              { text: "Block", loadingText: "Blocking", className: "block-action", onClick: () => blockUser(account.uid) }
-            ]
-          : [
-              { text: "Add friend", loadingText: "Sending", className: "primary-action", onClick: () => sendFriendRequest(account.uid) },
-              { text: "Block", loadingText: "Blocking", className: "block-action", onClick: () => blockUser(account.uid) }
-            ];
+            ? [
+                { text: "Pending", disabled: true },
+                { text: "Cancel", loadingText: "Canceling", className: "danger-action", onClick: () => cancelFriendRequest(account.uid) },
+                { text: "Block", loadingText: "Blocking", className: "block-action", onClick: () => blockUser(account.uid) }
+              ]
+            : [
+                { text: "Add friend", loadingText: "Sending", className: "primary-action", onClick: () => sendFriendRequest(account.uid) },
+                { text: "Block", loadingText: "Blocking", className: "block-action", onClick: () => blockUser(account.uid) }
+              ];
+
         usersList.appendChild(createAccountRow(account, {
           label: hasIncoming ? "Wants to be friends" : hasOutgoing ? "Request sent" : "Not friends yet",
           actions
@@ -970,19 +1448,26 @@ if ("serviceWorker" in navigator) {
           button.textContent = action.text;
           button.disabled = Boolean(action.disabled);
           if (action.onClick) {
-            button.addEventListener("click", (e) => { e.stopPropagation(); runAction(button, action); });
+            button.addEventListener("click", (event) => {
+              event.stopPropagation();
+              runAction(button, action);
+            });
           }
           actions.appendChild(button);
         });
         row.appendChild(actions);
       }
+
       return row;
     }
 
     function filterAccounts(list) {
       const query = searchUsers.value.trim().toLowerCase();
       return list
-        .filter((a) => `${a.displayName || ""} ${a.email || ""}`.toLowerCase().includes(query))
+        .filter((account) => {
+          const haystack = `${account.displayName || ""} ${account.email || ""}`.toLowerCase();
+          return haystack.includes(query);
+        })
         .sort((a, b) => String(a.displayName || a.email).localeCompare(String(b.displayName || b.email)));
     }
 
@@ -998,24 +1483,28 @@ if ("serviceWorker" in navigator) {
 
     function getIncomingRequests() {
       const merged = Object.values(incomingRequests || {});
-      Object.values(requestPairs || {}).forEach((r) => {
-        if (r && r.status === "pending" && r.toUid === currentUser.uid) merged.push(r);
+      Object.values(requestPairs || {}).forEach((request) => {
+        if (request && request.status === "pending" && request.toUid === currentUser.uid) {
+          merged.push(request);
+        }
       });
       return uniqueRequests(merged, "fromUid");
     }
 
     function getOutgoingRequests() {
       const merged = Object.values(outgoingRequests || {});
-      Object.values(requestPairs || {}).forEach((r) => {
-        if (r && r.status === "pending" && r.fromUid === currentUser.uid) merged.push(r);
+      Object.values(requestPairs || {}).forEach((request) => {
+        if (request && request.status === "pending" && request.fromUid === currentUser.uid) {
+          merged.push(request);
+        }
       });
       return uniqueRequests(merged, "toUid");
     }
 
     function uniqueRequests(requests, uidKey) {
       const seen = new Set();
-      return requests.filter((r) => {
-        const uid = r && r[uidKey];
+      return requests.filter((request) => {
+        const uid = request && request[uidKey];
         if (!uid || seen.has(uid) || isFriend(uid) || isBlocked(uid)) return false;
         seen.add(uid);
         return true;
@@ -1023,7 +1512,10 @@ if ("serviceWorker" in navigator) {
     }
 
     function requestsByUid(requests, uidKey) {
-      return requests.reduce((result, r) => { result[r[uidKey]] = r; return result; }, {});
+      return requests.reduce((result, request) => {
+        result[request[uidKey]] = request;
+        return result;
+      }, {});
     }
 
     async function writeFriendRequest(request) {
@@ -1031,10 +1523,18 @@ if ("serviceWorker" in navigator) {
         [`friendRequests/${request.toUid}/incoming/${request.fromUid}`]: request,
         [`friendRequests/${request.fromUid}/outgoing/${request.toUid}`]: request
       };
+
       try {
-        await db.ref().update({ [`friendRequestPairs/${request.id}`]: request, ...legacyUpdates });
+        await db.ref().update({
+          [`friendRequestPairs/${request.id}`]: request,
+          ...legacyUpdates
+        });
       } catch (primaryError) {
-        try { await db.ref().update(legacyUpdates); } catch { throw primaryError; }
+        try {
+          await db.ref().update(legacyUpdates);
+        } catch {
+          throw primaryError;
+        }
       }
     }
 
@@ -1066,8 +1566,13 @@ if ("serviceWorker" in navigator) {
         status: "pending",
         createdAt: firebase.database.ServerValue.TIMESTAMP
       };
-      outgoingRequests = { ...outgoingRequests, [toUid]: request };
+
+      outgoingRequests = {
+        ...outgoingRequests,
+        [toUid]: request
+      };
       renderUsers();
+
       try {
         await writeFriendRequest(request);
         showNotice("Friend request sent.");
@@ -1081,13 +1586,20 @@ if ("serviceWorker" in navigator) {
     async function acceptFriendRequest(friendUid) {
       if (!currentUser || !friendUid || isBlocked(friendUid)) return;
       const requestId = getConversationId(currentUser.uid, friendUid);
-      await db.ref().update({
-        [`friends/${currentUser.uid}/${friendUid}`]: { uid: friendUid, createdAt: firebase.database.ServerValue.TIMESTAMP },
-        [`friends/${friendUid}/${currentUser.uid}`]: { uid: currentUser.uid, createdAt: firebase.database.ServerValue.TIMESTAMP },
+      const updates = {
+        [`friends/${currentUser.uid}/${friendUid}`]: {
+          uid: friendUid,
+          createdAt: firebase.database.ServerValue.TIMESTAMP
+        },
+        [`friends/${friendUid}/${currentUser.uid}`]: {
+          uid: currentUser.uid,
+          createdAt: firebase.database.ServerValue.TIMESTAMP
+        },
         [`friendRequestPairs/${requestId}`]: null,
         [`friendRequests/${currentUser.uid}/incoming/${friendUid}`]: null,
         [`friendRequests/${friendUid}/outgoing/${currentUser.uid}`]: null
-      });
+      };
+      await db.ref().update(updates);
       setListMode("friends");
       showNotice("Friend request accepted.");
     }
@@ -1117,8 +1629,11 @@ if ("serviceWorker" in navigator) {
     async function unfriendUser(friendUid) {
       if (!currentUser || !friendUid) return;
       const name = accounts[friendUid] ? accounts[friendUid].displayName || accounts[friendUid].email : "this account";
-      await db.ref().update(relationshipCleanupUpdates(friendUid));
-      if (selectedUser && selectedUser.uid === friendUid) clearSelectedUser();
+      const updates = relationshipCleanupUpdates(friendUid);
+      await db.ref().update(updates);
+      if (selectedUser && selectedUser.uid === friendUid) {
+        clearSelectedUser();
+      }
       renderUsers();
       showNotice(`Removed ${name} from friends.`);
     }
@@ -1128,11 +1643,19 @@ if ("serviceWorker" in navigator) {
       const name = accounts[otherUid] ? accounts[otherUid].displayName || accounts[otherUid].email : "that account";
       const updates = {
         ...relationshipCleanupUpdates(otherUid),
-        [`blocked/${currentUser.uid}/${otherUid}`]: { uid: otherUid, createdAt: firebase.database.ServerValue.TIMESTAMP }
+        [`blocked/${currentUser.uid}/${otherUid}`]: {
+          uid: otherUid,
+          createdAt: firebase.database.ServerValue.TIMESTAMP
+        }
       };
       await db.ref().update(updates);
-      blocked = { ...blocked, [otherUid]: { uid: otherUid } };
-      if (selectedUser && selectedUser.uid === otherUid) clearSelectedUser();
+      blocked = {
+        ...blocked,
+        [otherUid]: { uid: otherUid }
+      };
+      if (selectedUser && selectedUser.uid === otherUid) {
+        clearSelectedUser();
+      }
       renderUsers();
       showNotice(`Blocked ${name}.`);
     }
@@ -1147,6 +1670,7 @@ if ("serviceWorker" in navigator) {
 
     function relationshipCleanupUpdates(otherUid) {
       const requestId = getConversationId(currentUser.uid, otherUid);
+      const conversationId = getConversationId(currentUser.uid, otherUid);
       return {
         [`friends/${currentUser.uid}/${otherUid}`]: null,
         [`friends/${otherUid}/${currentUser.uid}`]: null,
@@ -1155,7 +1679,7 @@ if ("serviceWorker" in navigator) {
         [`friendRequests/${currentUser.uid}/outgoing/${otherUid}`]: null,
         [`friendRequests/${otherUid}/incoming/${currentUser.uid}`]: null,
         [`friendRequests/${otherUid}/outgoing/${currentUser.uid}`]: null,
-        [`conversations/${requestId}`]: null
+        [`conversations/${conversationId}`]: null
       };
     }
 
@@ -1202,7 +1726,9 @@ if ("serviceWorker" in navigator) {
     }
 
     function listenForMessages() {
-      if (activeMessagesRef) activeMessagesRef.off();
+      if (activeMessagesRef) {
+        activeMessagesRef.off();
+      }
       const conversationId = getConversationId(currentUser.uid, selectedUser.uid);
       activeMessagesRef = db.ref(`messages/${conversationId}`).limitToLast(100);
       activeMessagesRef.on("value", (snapshot) => {
@@ -1217,15 +1743,14 @@ if ("serviceWorker" in navigator) {
         messagesList.innerHTML = '<p class="empty">No messages yet. Send the first one.</p>';
         return;
       }
+
       messages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach((message) => {
         const mine = message.senderId === currentUser.uid;
         const item = document.createElement("div");
         item.className = `message ${mine ? "mine" : ""}`;
-        item.id = `msg-${message.id}`;
         item.innerHTML = `
           <div class="message-meta">${escapeHtml(mine ? "You" : message.senderName || "Nebula user")} &middot; ${formatTime(message.createdAt)}</div>
           <div class="bubble">${escapeHtml(message.text)}</div>
-          ${mine ? `<button class="delete-btn" onclick="deleteMessage('${message.id}')">🗑 Delete</button>` : ""}
         `;
         messagesList.appendChild(item);
       });
@@ -1238,25 +1763,48 @@ if ("serviceWorker" in navigator) {
         showNotice("Choose a friend before starting a call.");
         return;
       }
-      if (currentCall) { showNotice("You are already in a call."); return; }
+      if (currentCall) {
+        showNotice("You are already in a call.");
+        return;
+      }
+
       try {
         await openLocalMedia(type);
         const callId = `${Date.now()}_${currentUser.uid}_${selectedUser.uid}`;
         const callRef = db.ref(`calls/${callId}`);
-        currentCall = { id: callId, ref: callRef, role: "caller", type, remoteUid: selectedUser.uid, remoteName: selectedUser.displayName || selectedUser.email, remoteDescriptionSet: false };
+        currentCall = {
+          id: callId,
+          ref: callRef,
+          role: "caller",
+          type,
+          remoteUid: selectedUser.uid,
+          remoteName: selectedUser.displayName || selectedUser.email,
+          remoteDescriptionSet: false
+        };
         showCallLayer(`Calling ${currentCall.remoteName}`, type === "video" ? "Video call ringing" : "Voice call ringing");
         startOutgoingRingback();
         await callRef.set({
-          id: callId, callerId: currentUser.uid, callerName: currentUser.displayName || currentUser.email,
-          calleeId: selectedUser.uid, calleeName: selectedUser.displayName || selectedUser.email,
-          type, status: "starting", createdAt: firebase.database.ServerValue.TIMESTAMP, updatedAt: firebase.database.ServerValue.TIMESTAMP
+          id: callId,
+          callerId: currentUser.uid,
+          callerName: currentUser.displayName || currentUser.email,
+          calleeId: selectedUser.uid,
+          calleeName: selectedUser.displayName || selectedUser.email,
+          type,
+          status: "starting",
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
         });
         createPeerConnection(db.ref(`calls/${callId}/callerCandidates`));
         listenForRemoteCandidates(db.ref(`calls/${callId}/calleeCandidates`));
         listenToActiveCall(callRef);
+
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
-        await callRef.update({ offer: { type: offer.type, sdp: offer.sdp }, status: "ringing", updatedAt: firebase.database.ServerValue.TIMESTAMP });
+        await callRef.update({
+          offer: { type: offer.type, sdp: offer.sdp },
+          status: "ringing",
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
       } catch (error) {
         showNotice(cleanCallError(error));
         await hangUpCall(false);
@@ -1267,7 +1815,10 @@ if ("serviceWorker" in navigator) {
       const call = snapshot.val();
       if (!call || call.calleeId !== currentUser.uid || call.callerId === currentUser.uid) return;
       if (currentCall && currentCall.id === call.id) return;
-      if (incomingCallData && incomingCallData.id === call.id && call.status !== "ringing") { hideIncomingCall(); return; }
+      if (incomingCallData && incomingCallData.id === call.id && call.status !== "ringing") {
+        hideIncomingCall();
+        return;
+      }
       if (call.status === "ringing" && !currentCall) {
         incomingCallData = { ...call, id: snapshot.key };
         incomingTitle.textContent = `${call.callerName || "A friend"} is calling`;
@@ -1285,16 +1836,29 @@ if ("serviceWorker" in navigator) {
       try {
         await openLocalMedia(call.type);
         const callRef = db.ref(`calls/${call.id}`);
-        currentCall = { id: call.id, ref: callRef, role: "callee", type: call.type, remoteUid: call.callerId, remoteName: call.callerName || "Friend", remoteDescriptionSet: false };
+        currentCall = {
+          id: call.id,
+          ref: callRef,
+          role: "callee",
+          type: call.type,
+          remoteUid: call.callerId,
+          remoteName: call.callerName || "Friend",
+          remoteDescriptionSet: false
+        };
         showCallLayer(`Call with ${currentCall.remoteName}`, "Connecting");
         createPeerConnection(db.ref(`calls/${call.id}/calleeCandidates`));
         await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
         currentCall.remoteDescriptionSet = true;
         listenForRemoteCandidates(db.ref(`calls/${call.id}/callerCandidates`));
         listenToActiveCall(callRef);
+
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        await callRef.update({ answer: { type: answer.type, sdp: answer.sdp }, status: "active", updatedAt: firebase.database.ServerValue.TIMESTAMP });
+        await callRef.update({
+          answer: { type: answer.type, sdp: answer.sdp },
+          status: "active",
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
       } catch (error) {
         showNotice(cleanCallError(error));
         await db.ref(`calls/${call.id}`).update({ status: "ended" });
@@ -1305,7 +1869,10 @@ if ("serviceWorker" in navigator) {
     async function rejectIncomingCall() {
       unlockAudio();
       if (!incomingCallData) return;
-      await db.ref(`calls/${incomingCallData.id}`).update({ status: "rejected", updatedAt: firebase.database.ServerValue.TIMESTAMP });
+      await db.ref(`calls/${incomingCallData.id}`).update({
+        status: "rejected",
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
       hideIncomingCall();
     }
 
@@ -1314,15 +1881,28 @@ if ("serviceWorker" in navigator) {
       remoteStream = new MediaStream();
       remoteVideo.srcObject = remoteStream;
       localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
-      peerConnection.ontrack = (e) => e.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
-      peerConnection.onicecandidate = (e) => { if (e.candidate) candidateRef.push(e.candidate.toJSON()); };
-      peerConnection.onconnectionstatechange = () => { if (peerConnection) callStatus.textContent = connectionLabel(peerConnection.connectionState); };
+      peerConnection.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
+      };
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          candidateRef.push(event.candidate.toJSON());
+        }
+      };
+      peerConnection.onconnectionstatechange = () => {
+        if (!peerConnection) return;
+        callStatus.textContent = connectionLabel(peerConnection.connectionState);
+      };
     }
 
     function listenForRemoteCandidates(ref) {
       const callback = async (snapshot) => {
         if (!peerConnection || !snapshot.exists()) return;
-        try { await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val())); } catch (e) { console.warn("ICE candidate error", e); }
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val()));
+        } catch (error) {
+          console.warn("Could not add ICE candidate", error);
+        }
       };
       ref.on("child_added", callback);
       activeCallListeners.push({ ref, eventName: "child_added", callback });
@@ -1332,15 +1912,26 @@ if ("serviceWorker" in navigator) {
       const callback = async (snapshot) => {
         const call = snapshot.val();
         if (!call || !currentCall || currentCall.id !== snapshot.key) return;
-        if (call.status === "rejected") { showNotice("Call declined."); await hangUpCall(false); return; }
-        if (call.status === "ended") { showNotice("Call ended."); await hangUpCall(false); return; }
+        if (call.status === "rejected") {
+          showNotice("Call declined.");
+          await hangUpCall(false);
+          return;
+        }
+        if (call.status === "ended") {
+          showNotice("Call ended.");
+          await hangUpCall(false);
+          return;
+        }
         if (currentCall.role === "caller" && call.answer && !currentCall.remoteDescriptionSet) {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
           currentCall.remoteDescriptionSet = true;
           stopCallSounds();
           callStatus.textContent = "Connected";
         }
-        if (call.status === "active") { stopCallSounds(); callStatus.textContent = "Connected"; }
+        if (call.status === "active") {
+          stopCallSounds();
+          callStatus.textContent = "Connected";
+        }
       };
       callRef.on("value", callback);
       activeCallListeners.push({ ref: callRef, eventName: "value", callback });
@@ -1348,11 +1939,15 @@ if ("serviceWorker" in navigator) {
 
     async function openLocalMedia(type) {
       if (!window.RTCPeerConnection || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Calls need HTTPS.");
+        throw new Error("Calls need http://localhost or HTTPS. Use start-nebula.bat instead of opening the file directly.");
       }
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === "video" });
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === "video"
+      });
       localVideo.srcObject = localStream;
-      isMuted = false; isCameraOff = false;
+      isMuted = false;
+      isCameraOff = false;
       muteButton.textContent = "Mute";
       cameraButton.textContent = "Camera";
       cameraButton.disabled = type !== "video";
@@ -1374,15 +1969,20 @@ if ("serviceWorker" in navigator) {
     async function hangUpCall(updateRemote) {
       stopCallSounds();
       if (updateRemote && currentCall && currentCall.ref) {
-        await currentCall.ref.update({ status: "ended", updatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+        await currentCall.ref.update({
+          status: "ended",
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).catch(() => {});
       }
       activeCallListeners.forEach(({ ref, eventName, callback }) => ref.off(eventName, callback));
       activeCallListeners = [];
       if (peerConnection) peerConnection.close();
       peerConnection = null;
-      if (localStream) localStream.getTracks().forEach((t) => t.stop());
-      localStream = null; remoteStream = null;
-      localVideo.srcObject = null; remoteVideo.srcObject = null;
+      if (localStream) localStream.getTracks().forEach((track) => track.stop());
+      localStream = null;
+      remoteStream = null;
+      localVideo.srcObject = null;
+      remoteVideo.srcObject = null;
       currentCall = null;
       callLayer.classList.remove("active");
     }
@@ -1390,7 +1990,9 @@ if ("serviceWorker" in navigator) {
     function toggleMute() {
       if (!localStream) return;
       isMuted = !isMuted;
-      localStream.getAudioTracks().forEach((t) => t.enabled = !isMuted);
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = !isMuted;
+      });
       muteButton.textContent = isMuted ? "Unmute" : "Mute";
     }
 
@@ -1399,7 +2001,9 @@ if ("serviceWorker" in navigator) {
       const videoTracks = localStream.getVideoTracks();
       if (!videoTracks.length) return;
       isCameraOff = !isCameraOff;
-      videoTracks.forEach((t) => t.enabled = !isCameraOff);
+      videoTracks.forEach((track) => {
+        track.enabled = !isCameraOff;
+      });
       cameraButton.textContent = isCameraOff ? "Camera on" : "Camera";
     }
 
@@ -1411,8 +2015,12 @@ if ("serviceWorker" in navigator) {
       authScreen.classList.add("active");
       appScreen.classList.remove("active");
       selectedUser = null;
-      accounts = {}; friends = {}; blocked = {};
-      incomingRequests = {}; outgoingRequests = {}; requestPairs = {};
+      accounts = {};
+      friends = {};
+      blocked = {};
+      incomingRequests = {};
+      outgoingRequests = {};
+      requestPairs = {};
       if (activeMessagesRef) activeMessagesRef.off();
       activeMessagesRef = null;
     }
@@ -1426,30 +2034,61 @@ if ("serviceWorker" in navigator) {
       setListMode("friends");
     }
 
-    function isFriend(uid) { return Boolean(uid && friends && friends[uid]); }
-    function isBlocked(uid) { return Boolean(uid && blocked && blocked[uid]); }
-    function getConversationId(a, b) { return [a, b].sort().join("_"); }
-    function getInitial(value) { return String(value || "?").trim().charAt(0).toUpperCase() || "?"; }
+    function isFriend(uid) {
+      return Boolean(uid && friends && friends[uid]);
+    }
+
+    function isBlocked(uid) {
+      return Boolean(uid && blocked && blocked[uid]);
+    }
+
+    function getConversationId(a, b) {
+      return [a, b].sort().join("_");
+    }
+
+    function getInitial(value) {
+      return String(value || "?").trim().charAt(0).toUpperCase() || "?";
+    }
+
     function formatTime(timestamp) {
       if (!timestamp) return "sending";
       return new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp));
     }
+
     function connectionLabel(state) {
-      return { new: "Connecting", checking: "Finding connection", connected: "Connected", completed: "Connected", disconnected: "Connection interrupted", failed: "Call connection failed", closed: "Call ended" }[state] || "Connecting";
+      const labels = {
+        new: "Connecting",
+        checking: "Finding connection",
+        connected: "Connected",
+        completed: "Connected",
+        disconnected: "Connection interrupted",
+        failed: "Call connection failed",
+        closed: "Call ended"
+      };
+      return labels[state] || "Connecting";
     }
+
     function showNotice(message) {
       appNotice.textContent = message;
       appNotice.classList.add("active");
       clearTimeout(showNotice.timer);
-      showNotice.timer = setTimeout(() => appNotice.classList.remove("active"), 5200);
+      showNotice.timer = setTimeout(() => {
+        appNotice.classList.remove("active");
+      }, 5200);
     }
+
     function unlockAudio() {
       const AudioEngine = window.AudioContext || window.webkitAudioContext;
       if (!AudioEngine) return null;
-      if (!audioContext) audioContext = new AudioEngine();
-      if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+      if (!audioContext) {
+        audioContext = new AudioEngine();
+      }
+      if (audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
       return audioContext;
     }
+
     function playTone(frequency, startDelay, duration, volume, type = "sine") {
       const context = unlockAudio();
       if (!context) return;
@@ -1457,43 +2096,121 @@ if ("serviceWorker" in navigator) {
       const gain = context.createGain();
       const start = context.currentTime + startDelay;
       const end = start + duration;
+
       oscillator.type = type;
       oscillator.frequency.setValueAtTime(frequency, start);
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(volume, start + 0.025);
       gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
       oscillator.connect(gain);
       gain.connect(context.destination);
       oscillator.start(start);
       oscillator.stop(end + 0.03);
     }
-    function playMessageSound() { playTone(740, 0, 0.09, 0.055, "triangle"); playTone(980, 0.08, 0.13, 0.045, "triangle"); }
-    function playIncomingRingtonePulse() { playTone(659, 0, 0.18, 0.075); playTone(784, 0.22, 0.18, 0.075); playTone(659, 0.62, 0.18, 0.075); playTone(784, 0.84, 0.22, 0.075); }
-    function playOutgoingRingbackPulse() { playTone(440, 0, 0.32, 0.055); playTone(440, 0.42, 0.32, 0.055); }
-    function startIncomingRingtone() { stopOutgoingRingback(); if (incomingRingtoneTimer) return; playIncomingRingtonePulse(); incomingRingtoneTimer = setInterval(playIncomingRingtonePulse, 2400); }
-    function stopIncomingRingtone() { if (incomingRingtoneTimer) { clearInterval(incomingRingtoneTimer); incomingRingtoneTimer = null; } }
-    function startOutgoingRingback() { stopIncomingRingtone(); if (outgoingRingbackTimer) return; playOutgoingRingbackPulse(); outgoingRingbackTimer = setInterval(playOutgoingRingbackPulse, 2600); }
-    function stopOutgoingRingback() { if (outgoingRingbackTimer) { clearInterval(outgoingRingbackTimer); outgoingRingbackTimer = null; } }
-    function stopCallSounds() { stopIncomingRingtone(); stopOutgoingRingback(); }
+
+    function playMessageSound() {
+      playTone(740, 0, 0.09, 0.055, "triangle");
+      playTone(980, 0.08, 0.13, 0.045, "triangle");
+    }
+
+    function playIncomingRingtonePulse() {
+      playTone(659, 0, 0.18, 0.075, "sine");
+      playTone(784, 0.22, 0.18, 0.075, "sine");
+      playTone(659, 0.62, 0.18, 0.075, "sine");
+      playTone(784, 0.84, 0.22, 0.075, "sine");
+    }
+
+    function playOutgoingRingbackPulse() {
+      playTone(440, 0, 0.32, 0.055, "sine");
+      playTone(440, 0.42, 0.32, 0.055, "sine");
+    }
+
+    function startIncomingRingtone() {
+      stopOutgoingRingback();
+      if (incomingRingtoneTimer) return;
+      playIncomingRingtonePulse();
+      incomingRingtoneTimer = setInterval(playIncomingRingtonePulse, 2400);
+    }
+
+    function stopIncomingRingtone() {
+      if (incomingRingtoneTimer) {
+        clearInterval(incomingRingtoneTimer);
+        incomingRingtoneTimer = null;
+      }
+    }
+
+    function startOutgoingRingback() {
+      stopIncomingRingtone();
+      if (outgoingRingbackTimer) return;
+      playOutgoingRingbackPulse();
+      outgoingRingbackTimer = setInterval(playOutgoingRingbackPulse, 2600);
+    }
+
+    function stopOutgoingRingback() {
+      if (outgoingRingbackTimer) {
+        clearInterval(outgoingRingbackTimer);
+        outgoingRingbackTimer = null;
+      }
+    }
+
+    function stopCallSounds() {
+      stopIncomingRingtone();
+      stopOutgoingRingback();
+    }
+
     function cleanCallError(error) {
       const message = String(error && error.message ? error.message : error);
-      if (message.includes("Permission denied") || message.includes("NotAllowedError")) return "Camera or microphone permission was blocked.";
-      if (message.includes("getUserMedia")) return "Calls need HTTPS.";
+      if (message.includes("Permission denied") || message.includes("NotAllowedError")) {
+        return "Camera or microphone permission was blocked.";
+      }
+      if (message.includes("http://localhost") || message.includes("getUserMedia")) {
+        return "Calls need http://localhost or HTTPS. Double-click start-nebula.bat, then use calls there.";
+      }
       return message;
     }
+
     function cleanFirebaseError(error) {
       const code = error && error.code ? String(error.code) : "";
-      if (code === "auth/operation-not-allowed") return "Enable Email/Password in Firebase Authentication.";
-      if (code === "auth/email-already-in-use") return "That email already has an account. Use the Log in tab.";
-      if (code === "auth/weak-password") return "Password must be at least 6 characters.";
-      if (code === "auth/invalid-email") return "Enter a real email address.";
-      if (code === "auth/network-request-failed") return "Network request failed. Check your internet connection.";
-      if (code === "PERMISSION_DENIED" || String(error && error.message || "").toLowerCase().includes("permission")) return "Realtime Database denied the request. Check your Firebase rules.";
-      const message = String(error && error.message ? error.message : "Something went wrong.").replace("Firebase: ", "").replace(/\s*\(auth\/.*\)\.?$/, ".");
+      if (code === "auth/operation-not-allowed") {
+        return "Enable Email/Password in Firebase Authentication > Sign-in method.";
+      }
+      if (code === "auth/configuration-not-found") {
+        return "Firebase Authentication is not fully set up for this project yet.";
+      }
+      if (code === "auth/email-already-in-use") {
+        return "That email already has an account. Use the Log in tab.";
+      }
+      if (code === "auth/weak-password") {
+        return "Password must be at least 6 characters.";
+      }
+      if (code === "auth/invalid-email") {
+        return "Enter a real email address.";
+      }
+      if (code === "auth/network-request-failed") {
+        return "Network request failed. Check your internet connection and try again.";
+      }
+      if (code === "auth/operation-not-supported-in-this-environment") {
+        return "Firebase Auth needs the page opened with http:// or https://. Use start-nebula.bat.";
+      }
+      if (code === "PERMISSION_DENIED" || String(error && error.message || "").toLowerCase().includes("permission")) {
+        return "Realtime Database denied the request. Paste the updated firebase-rtdb-rules.json rules.";
+      }
+
+      const message = String(error && error.message ? error.message : "Something went wrong.")
+        .replace("Firebase: ", "")
+        .replace(/\s*\(auth\/.*\)\.?$/, ".");
       return code ? `${message} (${code})` : message;
     }
+
     function escapeHtml(value) {
-      return String(value || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
+      return String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
     }
   </script>
 </body>
